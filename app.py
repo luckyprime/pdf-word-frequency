@@ -54,7 +54,22 @@ uploaded_file = st.file_uploader("Upload a PDF file", type="pdf")
 
 if uploaded_file:
     text = ocr_pdf(uploaded_file)
-    tokens = word_tokenize(text)
+    from nltk.tokenize import PunktSentenceTokenizer
+
+# Ensure punkt is available
+try:
+    nltk.data.find("tokenizers/punkt")
+except LookupError:
+    nltk.download("punkt")
+
+# Use the English tokenizer from punkt
+sentence_tokenizer = PunktSentenceTokenizer()
+sentences = sentence_tokenizer.tokenize(text)
+
+tokens = []
+for sentence in sentences:
+    tokens.extend(word_tokenize(sentence))
+
     tokens = [t.lower() for t in tokens if t.isalpha()]
     frequent_compounds = find_frequent_sequences(tokens)
 
