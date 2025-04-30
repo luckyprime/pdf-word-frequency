@@ -5,16 +5,21 @@ import nltk
 # import re # Example import
 # from collections import Counter # Example import
 
-# --- NLTK Data Download ---
-# This block checks if the 'punkt' tokenizer data is available.
-# If not, it downloads it. This is crucial for deployment platforms
-# like Streamlit Cloud where NLTK data is not pre-installed.
-try:
-    nltk.data.find('tokenizers/punkt')
-except (nltk.downloader.DownloadError, LookupError):
-    st.warning("NLTK 'punkt' tokenizer data not found. Downloading now...")
-    nltk.download('punkt')
-    st.success("NLTK 'punkt' tokenizer data downloaded.")
+# --- NLTK Data Download Function ---
+# Use st.cache_resource to download NLTK data only once per session.
+@st.cache_resource
+def download_nltk_data():
+    """Downloads the NLTK 'punkt' tokenizer data."""
+    try:
+        nltk.data.find('tokenizers/punkt')
+        st.success("NLTK 'punkt' tokenizer data found in cache.")
+    except (nltk.downloader.DownloadError, LookupError):
+        st.warning("NLTK 'punkt' tokenizer data not found. Downloading now...")
+        nltk.download('punkt')
+        st.success("NLTK 'punkt' tokenizer data downloaded.")
+
+# --- Call the download function before using NLTK ---
+download_nltk_data()
 
 # Now you can safely import and use NLTK tokenizers
 from nltk.tokenize import word_tokenize, sent_tokenize
@@ -42,6 +47,7 @@ if uploaded_file is not None:
         # Tokenize the text into sentences and then words
         all_tokens = []
         # Use sent_tokenize to split text into sentences first
+        # This line caused the error before, but should now work after caching the download
         sentences = sent_tokenize(text)
         for sentence in sentences:
             # Then use word_tokenize on each sentence
