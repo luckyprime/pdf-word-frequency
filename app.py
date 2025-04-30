@@ -7,6 +7,20 @@ from itertools import tee, islice
 import nltk
 import tempfile
 import os
+import nltk
+import os
+
+# Set up NLTK data path for Streamlit Cloud
+nltk_data_path = os.path.join(os.path.dirname(__file__), "nltk_data")
+os.makedirs(nltk_data_path, exist_ok=True)
+
+nltk.data.path.append(nltk_data_path)
+
+# Download punkt if not already present
+try:
+    nltk.data.find("tokenizers/punkt")
+except LookupError:
+    nltk.download("punkt", download_dir=nltk_data_path)
 
 # Fix: Set custom nltk_data path for Streamlit compatibility
 nltk_data_dir = os.path.join(os.getcwd(), "nltk_data")
