@@ -1,76 +1,83 @@
 import streamlit as st
-from pdf2image import convert_from_path
-import pytesseract
-from nltk.tokenize import word_tokenize
-from nltk.tokenize.punkt import PunktSentenceTokenizer
-from collections import Counter
-from itertools import tee, islice
 import nltk
-import tempfile
-import os
+# Assuming you have other imports here, like for PDF processing
+# import PyPDF2 # Example import
+# import re # Example import
+# from collections import Counter # Example import
 
-# Set up and ensure punkt is downloaded
-nltk_data_path = os.path.join(os.path.dirname(__file__), "nltk_data")
-os.makedirs(nltk_data_path, exist_ok=True)
-nltk.data.path.append(nltk_data_path)
-
+# --- NLTK Data Download ---
+# This block checks if the 'punkt' tokenizer data is available.
+# If not, it downloads it. This is crucial for deployment platforms
+# like Streamlit Cloud where NLTK data is not pre-installed.
 try:
-    nltk.data.find("tokenizers/punkt")
-except LookupError:
-    nltk.download("punkt", download_dir=nltk_data_path)
+    nltk.data.find('tokenizers/punkt')
+except (nltk.downloader.DownloadError, LookupError):
+    st.warning("NLTK 'punkt' tokenizer data not found. Downloading now...")
+    nltk.download('punkt')
+    st.success("NLTK 'punkt' tokenizer data downloaded.")
 
-# N-gram helper
-def ngrams(tokens, n):
-    return zip(*[islice(seq, i, None) for i, seq in enumerate(tee(tokens, n))])
+# Now you can safely import and use NLTK tokenizers
+from nltk.tokenize import word_tokenize, sent_tokenize
 
-def find_frequent_sequences(tokens, min_length=2, max_length=3, min_freq=2):
-    frequent_sequences = Counter()
-    for n in range(min_length, max_length + 1):
-        for seq in ngrams(tokens, n):
-            frequent_sequences[seq] += 1
-    return {seq: freq for seq, freq in frequent_sequences.items() if freq >= min_freq}
+# --- Rest of your Streamlit App Code ---
 
-# OCR handler
-def ocr_pdf(uploaded_pdf):
-    with tempfile.TemporaryDirectory() as path:
-        temp_pdf = os.path.join(path, "temp.pdf")
-        with open(temp_pdf, "wb") as f:
-            f.write(uploaded_pdf.read())
-        images = convert_from_path(temp_pdf)
-        text = ""
-        for image in images:
-            text += pytesseract.image_to_string(image)
-        return text
+st.title("PDF Word Frequency Counter")
 
-# Streamlit UI
-st.title("PDF Word Frequency Analyzer")
-uploaded_file = st.file_uploader("Upload a PDF file", type="pdf")
+# Add your file uploader
+uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
 
-if uploaded_file:
-    text = ocr_pdf(uploaded_file)
+if uploaded_file is not None:
+    # To read file as string:
+    # Assuming you have code here to read the PDF and extract text
+    # Example placeholder for text extraction:
+    # text = extract_text_from_pdf(uploaded_file) # Replace with your actual function
 
-    # Tokenization
-    sentence_tokenizer = PunktSentenceTokenizer()
-    sentences = sentence_tokenizer.tokenize(text)
+    # For demonstration, let's use a dummy text
+    text = "This is a sample sentence. This is another sentence for testing."
 
-    tokens = []
-    for sentence in sentences:
-        tokens.extend(word_tokenize(sentence))
+    if text:
+        st.subheader("Extracted Text (Sample)")
+        st.text(text[:500] + "...") # Display first 500 characters
 
-    tokens = [t.lower() for t in tokens if t.isalpha()]
-    frequent_compounds = find_frequent_sequences(tokens)
+        # Tokenize the text into sentences and then words
+        all_tokens = []
+        # Use sent_tokenize to split text into sentences first
+        sentences = sent_tokenize(text)
+        for sentence in sentences:
+            # Then use word_tokenize on each sentence
+            tokens = word_tokenize(sentence)
+            all_tokens.extend(tokens)
 
-    word_counts = Counter(tokens)
-    for compound, freq in frequent_compounds.items():
-        term = ' '.join(compound)
-        word_counts[term] = freq
-        for word in compound:
-            if word_counts[word] > 0:
-                word_counts[word] -= freq
+        st.subheader("Tokens (Sample)")
+        st.text(str(all_tokens[:50])) # Display first 50 tokens
 
-    sorted_counts = sorted(word_counts.items(), key=lambda x: x[1], reverse=True)
+        # Example of counting word frequency (you'll need to clean tokens first)
+        # from collections import Counter
+        # cleaned_tokens = [word.lower() for word in all_tokens if word.isalpha()] # Simple cleaning
+        # word_counts = Counter(cleaned_tokens)
 
-    st.subheader("Word Frequencies")
-    for word, count in sorted_counts:
-        if count > 0:
-            st.write(f"{word}: {count}")
+        # st.subheader("Word Frequency (Sample)")
+        # st.write(word_counts.most_common(10)) # Display top 10 words
+
+    else:
+        st.warning("Could not extract text from the PDF.")
+
+# Add any other parts of your app below this line
+# ...
+
+# Example function placeholder (replace with your actual PDF processing logic)
+# def extract_text_from_pdf(pdf_file):
+#     # Your PDF reading and text extraction code goes here
+#     # Make sure to handle potential errors during PDF processing
+#     try:
+#         # Example using PyPDF2
+#         # reader = PyPDF2.PdfReader(pdf_file)
+#         # text = ""
+#         # for page_num in range(len(reader.pages)):
+#         #     text += reader.pages[page_num].extract_text()
+#         # return text
+#         pass # Replace with actual implementation
+#     except Exception as e:
+#         st.error(f"Error processing PDF: {e}")
+#         return None
+
